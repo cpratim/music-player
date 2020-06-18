@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Fire Music</title>
+	<link rel='stylesheet' href='../static/styles/player.css'>
+	<link rel="stylesheet" type="text/css" href="../static/styles/reset.css">
+	<link rel="stylesheet" type="text/css" href="../static/styles/audio.css">
+</head>
+<body>
+	<div id='bar'>
+		<div id='logo'>Music Player</div>
+		<form action="/search/{{active['title']}}" method="POST">
+		<div class='search-box-wrapper'>
+			<div class="search">
+			  	<input name='query' type="search" class="search-box" placeholder="Search..." />
+			  	<input class="submit" type='submit' value="Go">
+			</div>
+		</div>
+	</form>
+	</div>
+	<div class='active-album-background' style='background-image: url({{active["album-art"]}})'></div>
+	<img class='active-album-art' src='{{active["album-art"]}}'>
+	<div id="timeline">
+		<div id='playhead-active'></div>
+		<div id="playhead"></div>
+	</div>
+	<div class='songs-wrapper'>
+		<div class='songs-header'>Library
+		<hr class='underline'></div>
+		{% for song in songs %}
+			<a href='/song/{{song}}'>
+				<div class='song'>
+					<img class='song-thumbnail' src='{{songs[song]["album-art"]}}'>
+					<div class='meta-data'>
+						<div class='title'>{{song}}</div>
+						<div class='album'>{{songs[song]['album']}}</div>
+						<div class='artist'>{{songs[song]['artist']}}</div>
+					</div>
+				</div>
+			</a>
+		{% endfor %}
+	</div>
+
+	{% if results %}
+		<div class='results'>
+			<div class='results-label'>Results for "{{query}}"</div>
+			{% for r in results %}
+				<a href='/download?song={{r[0]}} - {{r[1]}}'>
+					<div class='result'>
+						<img class='result-thumbnail' src={{r[3]}}>
+						<div class='meta-data'>
+							<div class='title'>{{r[0]}}</div>
+							<div class='album'>{{r[2]}}</div>
+							<div class='artist'>{{r[1]}}</div>
+						</div>
+					</div>
+				</a>
+			{% endfor %}
+		</div>
+	{% endif %}
+	<div class='active-song'>
+		<img class='active-song-thumbnail' src='{{active["album-art"]}}'>
+		<div class='meta-data-active'>
+			<div class='title' id='active'>{{active['title']}}</div>
+			<div class='album' id='active'>{{active['album']}}</div>
+			<div class='artist' id='active'>{{active['artist']}}</div>
+		</div>
+	</div>
+	
+	
+		
+	<canvas id='canvas'></canvas>
+  	<audio src="../{{active['file']}}" id="audio" preload='auto' autoplay></audio>
+	<div class='controls'>
+			<!--Audio Player Interface-->
+			<button id="pButton" class="play"></button>
+			<div id='ff' class="forward"></div>
+			<div id='ff' class="backward"></div>
+			<div id="audioplayer">
+				
+				
+			</div>
+	</div>
+
+	<script>
+		document.addEventListener("DOMContentLoaded", function(event) {
+
+		var music = document.getElementById('audio');
+		var duration = {{active['length']}}; 
+		var pButton = document.getElementById('pButton'); 
+		var playhead = document.getElementById('playhead');
+		var playheadActive = document.getElementById('playhead-active'); 
+		var timeline = document.getElementById('timeline'); 
+
+		var timelineWidth = timeline.offsetWidth - playhead.offsetWidth;
+
+		pButton.addEventListener("click", play);
+
+		music.addEventListener("timeupdate", timeUpdate, false);
+
+		timeline.addEventListener("click", function(event) {
+		    moveplayhead(event);
+		    music.currentTime = duration * clickPercent(event);
+		}, false);
+
+		function clickPercent(event) {
+		    return (event.clientX - getPosition(timeline)) / timelineWidth;
+
+		}
+
+		playhead.addEventListener('mousedown', mouseDown, false);
+		window.addEventListener('mouseup', mouseUp, false);
+
+		var onplayhead = false;
+
+		function mouseDown() {
+		    onplayhead = true;
+		    window.addEventListener('mousemove', moveplayhead, true);
+		    music.removeEventListener('timeupdate', timeUpdate, false);
+		}
+
+		function mouseUp(event) {
+		    if (onplayhead == true) {
+		        moveplayhead(event);
+		        window.removeEventListener('mousemove', moveplayhead, true);
+		        music.currentTime = duration * clickPercent(event);
+		        music.addEventListener('timeupdate', timeUpdate, false);
+		    }
+		    onplayhead = false;
+		}
+		function moveplayhead(event) {
+		    var newMargLeft = event.clientX - getPosition(timeline);
+
+		    if (newMargLeft >= 0 && newMargLeft <= timelineWidth) {
+		        playhead.style.marginLeft = newMargLeft + "px";
+		    }
+		    if (newMargLeft < 0) {
+		        playhead.style.marginLeft = "0px";
+		    }
+		    if (newMargLeft > timelineWidth) {
+		        playhead.style.marginLeft = timelineWidth + "px";
+		    }
+		}
+
+		function timeUpdate() {
+		    var playPercent = timelineWidth * (music.currentTime / duration);
+		    playhead.style.marginLeft = playPercent + "px";
+		    playheadActive.style.width = playPercent + "px";
+		    if (music.currentTime == duration) {
+		        pButton.className = "";
+		        pButton.className = "play";
+		    }
+		}
+
+		function play() {
+		    if (music.paused) {
+		        music.play();
+		        pButton.className = "";
+		        pButton.className = "pause";
+		    } else {
+		        music.pause();
+		        pButton.className = "";
+		        pButton.className = "play";
+		    }
+		}
+
+		music.addEventListener("canplaythrough", function() {
+		    duration = music.duration;
+		}, false);
+
+		function getPosition(el) {
+		    return el.getBoundingClientRect().left;
+		}
+
+		});
+	</script>
+	<script>
+
+	</script>
+	<script src="../static/scripts/main.js" type="text/javascript"></script>
+</body>
+</html>
